@@ -156,10 +156,4 @@ The project was initially developed in Jupyter notebooks (`notebooks/plant_model
 - matplotlib >= 3.7.0 (for visualizations)
 - seaborn >= 0.12.0 (for visualizations)
 
-## 📄 License
 
-This project is for educational purposes.
-
-## 👤 Author
-
-Created as part of a machine learning project for crop recommendation.
