@@ -23,7 +23,7 @@ def predict_crop(K, P, N, temperature, humidity, ph):
     # Create feature array (same order as training: K, P, N, temperature, humidity, ph)
     features = np.array([[K, P, N, temperature, humidity, ph]])
     
-    # Make prediction (same as notebook: y_pred = rf_model.predict(x_test))
+    # Make prediction 
     pred_encoded = rf_model.predict(features)[0]
     pred_crop = le.inverse_transform([pred_encoded])[0]
     
@@ -49,10 +49,10 @@ def predict_batch(data_path):
     # Features (same as notebook)
     x = df[['K', 'P', 'N', 'temperature', 'humidity', 'ph']]
     
-    # Make predictions (same as notebook: y_pred = rf_model.predict(x_test))
+    # Make predictions 
     y_pred = rf_model.predict(x)
     
-    # Create comparison dataframe (same style as notebook)
+    # Create comparison dataframe 
     comparison_df = pd.DataFrame({
         'Index': range(len(x)),
         'K': x['K'].values,
@@ -65,7 +65,7 @@ def predict_batch(data_path):
         'Predicted (crop)': le.inverse_transform(y_pred)
     })
     
-    # If actual labels exist in the data, add comparison (like notebook)
+    # If actual labels exist in the data, add comparison 
     if 'label' in df.columns:
         le_label = le.transform(df['label'])
         comparison_df.insert(1, 'Actual (encoded)', le_label)

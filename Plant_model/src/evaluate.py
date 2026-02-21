@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 def load_model_and_data():
     """Load the trained model and regenerate test data"""
     
-    # Get base directory
+    # Directory
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     models_dir = os.path.join(base_dir, 'models')
     data_dir = os.path.join(base_dir, 'data')
@@ -28,7 +28,7 @@ def load_model_and_data():
     
     # Check if files exist
     if not os.path.exists(model_path):
-        print(f"❌ Model not found at: {model_path}")
+        print(f"Model not found at: {model_path}")
         print("Please run train_model.py first!")
         return None
     
@@ -36,21 +36,21 @@ def load_model_and_data():
     rf_model = joblib.load(model_path)
     le = joblib.load(encoder_path)
     
-    # Regenerate test data (same split as training)
+    # Regenerate test data 
     df = pd.read_csv(data_path)
     df["le_label"] = le.transform(df['label'])  # Use existing encoder
     
     x = df[['K', 'P', 'N', 'temperature', 'humidity', 'ph']]
     y = df['le_label']
     
-    # Same split as in train_model.py (test_size=0.2, random_state=42, stratify=y)
+ 
     _, x_test, _, y_test = train_test_split(
         x, y, test_size=.2, random_state=42, stratify=y
     )
     
-    print(f"✅ Model loaded from: {model_path}")
-    print(f"✅ Encoder loaded from: {encoder_path}")
-    print(f"✅ Test data regenerated: {len(x_test)} samples")
+    print(f"Model loaded from: {model_path}")
+    print(f"Encoder loaded from: {encoder_path}")
+    print(f"Test data regenerated: {len(x_test)} samples")
     
     return rf_model, le, x_test, y_test
 
@@ -61,18 +61,18 @@ def evaluate_model(rf_model, le, x_test, y_test):
     print("📊 MODEL EVALUATION RESULTS")
     print("=" * 70)
     
-    # Make predictions
+    # Predictions
     y_pred = rf_model.predict(x_test)
     
-    # ACCURACY - Same as your original
+    # ACCURACY 
     accuracy = accuracy_score(y_test, y_pred)
     print(f"\n Random Forest Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
     
-    # CLASSIFICATION REPORT - Same as your original
+    # CLASSIFICATION REPORT 
     print("\n Classification Report:")
     print(classification_report(y_test, y_pred, target_names=le.classes_))
     
-    # FEATURE IMPORTANCE - Same as your original
+    # FEATURE IMPORTANCE 
     feature_importance = pd.DataFrame({
         'feature': x_test.columns,
         'importance': rf_model.feature_importances_
@@ -87,7 +87,7 @@ def evaluate_model(rf_model, le, x_test, y_test):
 def show_sample_predictions(y_test, y_pred, le):
     """Show sample predictions exactly like your original code"""
     
-    # Create comparison dataframe - EXACTLY like your original
+    # Comparison dataframe 
     comparison_df = pd.DataFrame({
         'Index': range(len(y_test)),
         'Actual (encoded)': y_test,
@@ -97,11 +97,11 @@ def show_sample_predictions(y_test, y_pred, le):
         'Correct': y_test == y_pred
     })
     
-    # Show first 20 samples - exactly like your original
+    # Show first 20 samples 
     print("\nSample Predictions (First 20):")
     print(comparison_df.head(20).to_string(index=False))
     
-    # Summary of correct/incorrect - exactly like your original
+    # Summary of correct/incorrect 
     print("\n" + "=" * 70)
     correct_count = comparison_df['Correct'].sum()
     incorrect_count = len(comparison_df) - correct_count
@@ -131,7 +131,7 @@ def show_prediction_summary(comparison_df):
     # Find misclassified samples
     misclassified = comparison_df[~comparison_df['Correct']]
     if len(misclassified) > 0:
-        print("\n❌ Misclassified Samples (First 10):")
+        print("\n Misclassified Samples (First 10):")
         print("-" * 50)
         for idx, row in misclassified.head(10).iterrows():
             print(f"  Sample {int(row['Index'])}: Actual={row['Actual (crop)']} → Predicted={row['Predicted (crop)']}")
@@ -146,13 +146,13 @@ def main():
     
     rf_model, le, x_test, y_test = result
     
-    # Evaluate model (exactly like your original)
+    # Evaluate model 
     y_pred = evaluate_model(rf_model, le, x_test, y_test)
     
-    # Show sample predictions (exactly like your original)
+    # Show sample predictions
     comparison_df = show_sample_predictions(y_test, y_pred, le)
     
-    # Show additional summary (extra but useful)
+    # Show additional summary
     show_prediction_summary(comparison_df)
     
     print("\n" + "=" * 70)
