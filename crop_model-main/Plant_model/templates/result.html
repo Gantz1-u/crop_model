@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Recommendation Result</title>
+</head>
+<body>
+    <h1>Crop Recommendation System</h1>
+    
+    <h2>Top 5 Recommended Crops:</h2>
+    <ol>
+        {% for crop, confidence in predictions %}
+        <li><strong>{{ crop }}</strong> - {{ confidence }}% confidence</li>
+        {% endfor %}
+    </ol>
+    
+    <h3>Input Values:</h3>
+    <p>Temperature: {{ temperature }}°C</p>
+    <p>Humidity: {{ humidity }}%</p>
+    <p>pH: {{ ph }}</p>
+    
+    <br>
+    <a href="/">Make Another Prediction</a>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Recommendation</title>
+</head>
+<body>
+    <h1>Crop Recommendation System</h1>
+    
+    <form method="POST" action="/predict">
+        <label>Temperature (°C):</label>
+        <input type="number" name="temperature" step="any" required>
+        <br><br>
+        
+        <label>Humidity (%):</label>
+        <input type="number" name="humidity" step="any" required>
+        <br><br>
+        
+        <label>pH:</label>
+        <input type="number" name="ph" step="any" required>
+        <br><br>
+        
+        <button type="submit">Predict Crop</button>
+    </form>
+</body>
+</html>
