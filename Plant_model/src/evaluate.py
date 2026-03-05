@@ -40,7 +40,7 @@ def load_model_and_data():
     df = pd.read_csv(data_path)
     df["le_label"] = le.transform(df['label'])  # Use existing encoder
     
-    x = df[['K', 'P', 'N', 'temperature', 'humidity', 'ph']]
+    x = df[['temperature', 'humidity', 'ph']]
     y = df['le_label']
     
  

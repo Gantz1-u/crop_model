@@ -24,7 +24,7 @@ def train_and_save_model(data_path='Crop_recommendation.csv'):
     df["le_label"] = le.fit_transform(df['label'])
     
     # Features and target
-    x = df[['K', 'P', 'N', 'temperature', 'humidity', 'ph']]
+    x = df[['temperature', 'humidity', 'ph']]
     y = df['le_label']
     
     # Split data

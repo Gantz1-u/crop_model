@@ -1,13 +1,11 @@
-# Plant Model - Crop Recommendation System
-
-A machine learning system that recommends optimal crops based on soil and climate parameters using Random Forest classification.
 
 ## Model Performance
 
-- **Accuracy**: 97.05% on test data
+- **Accuracy**: ~76% on test data
 - **Algorithm**: Random Forest Classifier
-- **Features**: K, P, N, temperature, humidity, pH
+- **Features**: temperature, humidity, pH (reduced from original 6 features)
 - **Crops Supported**: 22 different crops
+- **Note**: Accuracy reduced from 97% after removing K, P, N features for simplicity
 
 ## Project Structure
 
@@ -55,6 +53,26 @@ Plant_model/
 pip install -r requirements.txt
 ```
 
+**Key Dependencies:**
+- `pandas`, `numpy` - Data manipulation
+- `scikit-learn` - Machine learning (Random Forest)
+- `flask` - Web server and REST API
+- `flask-cors` - Enable CORS for JavaScript fetch requests
+- `joblib` - Model serialization
+
+**Requirements File (`requirements.txt`):**
+```
+pandas>=2.0.0
+numpy>=1.23.0
+scikit-learn>=1.3.0
+joblib>=1.3.0
+flask>=3.0.0
+flask-cors>=6.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+jupyter>=1.0.0
+```
+
 ### 1. Train the Model
 
 ```bash
@@ -89,6 +107,7 @@ This will:
 - Load the trained model
 - Make a prediction on a random sample from the dataset
 - Show predicted vs actual crop
+- Display top 15 crop recommendations with probabilities
 
 **Web Interface:**
 ```bash
@@ -96,23 +115,44 @@ python app.py
 ```
 
 Then open your browser to `http://127.0.0.1:5000`
-- Fill in soil and climate parameters in the web form
-- Get instant crop recommendations
-- User-friendly interface for non-technical users
+- Modern interface with HTML, CSS, and JavaScript
+- Uses AJAX to communicate with JSON API
+- Real-time predictions without page reload
+- Displays top 15 crop recommendations with probabilities
 
 #### Use in Your Code
 
 ```python
-from src.predict import predict_crop, predict_batch
+from src.predict import predict_crop, predict_top_n_crops, predict_batch
 
-# Single prediction
+# Single prediction (returns top recommendation)
 encoded, crop = predict_crop(
-    K=20, P=40, N=60, 
     temperature=25.5, 
     humidity=80.0, 
     ph=6.5
 )
 print(f"Recommended crop: {crop}")
+
+# Get top 15 crop recommendations with probabilities (default)
+top_crops = predict_top_n_crops(
+    temperature=25.5, 
+    humidity=80.0, 
+    ph=6.5
+)
+print(top_crops)
+# Output:
+#          crop  probability
+# 0        rice        0.85
+# 1       maize        0.08
+# 2      cotton        0.03
+# ...       ...         ...
+# 14     papaya        0.001
+
+# Get specific number (e.g., top 5)
+top_5 = predict_top_n_crops(temperature=25.5, humidity=80.0, ph=6.5, top_n=5)
+
+# Get all 22 crops
+all_crops = predict_top_n_crops(temperature=25.5, humidity=80.0, ph=6.5, top_n=22)
 
 # Batch prediction from CSV
 results = predict_batch('tests/test_data.csv')
@@ -121,7 +161,26 @@ print(results)
 
 ## Web API
 
-The project includes a Flask web application for easy access to predictions.
+The project includes a Flask web application with a JSON REST API for JavaScript communication.
+
+### Architecture
+
+```
+Browser (JavaScript)  ←→  Flask Server (Python)  ←→  ML Model (scikit-learn)
+     Port: Any              Port: 5000               Random Forest
+     
+User fills form
+    ↓
+JavaScript fetch('/api/predict')
+    ↓
+Flask processes request
+    ↓
+Model predicts top 15 crops
+    ↓
+JSON response with probabilities
+    ↓
+JavaScript displays results
+```
 
 ### Start the Server
 
@@ -131,48 +190,41 @@ python app.py
 
 The server will start at `http://127.0.0.1:5000`
 
-### Web Interface
-
-Access the web form at `http://127.0.0.1:5000` to:
-- Enter soil parameters (K, P, N)
-- Enter climate data (temperature, humidity, pH)
-- Get crop recommendation instantly
-
-### For Developers
-
-
-**Example API Request:**
-```python
-import requests
-
-data = {
-    "K": 20,
-    "P": 80,
-    "N": 90,
-    "temperature": 25.5,
-    "humidity": 70,
-    "ph": 6.5
-}
-
-response = requests.post('http://127.0.0.1:5000/api/predict', json=data)
-print(response.json())  # {"crop": "rice"}
-```
-flask >= 3.0.0 (for web API)
-- flask-cors >= 6.0.0 (for API CORS support)
-- 
+**Important:** Always access the web app at **port 5000** (Flask), not 5500 (Live Server)
 
 ## Features
 
 **Input Parameters:**
-- **N** - Nitrogen content in soil
-- **P** - Phosphorus content in soil
-- **K** - Potassium content in soil
 - **temperature** - Temperature in Celsius
 - **humidity** - Relative humidity in percentage
 - **ph** - pH value of soil
 
-**Output:**
-- Recommended crop from 22 options (rice, maize, banana, etc.)
+**Output Options:**
+
+1. **Single Crop Prediction** (`predict_crop`)
+   - Returns: The top recommended crop
+   - Use case: When you need one best recommendation
+
+2. **Top N Crop Recommendations** (`predict_top_n_crops`)
+   - Returns: DataFrame with top N crops and their probabilities
+   - Default: Top 15 recommendations (customizable to any number)
+   - Probabilities: Shows confidence level for each recommendation
+   - Use case: When you want multiple options ranked by suitability
+   - Stored in variable for easy access by other developers
+   - Example output:
+     ```
+     Rank  Crop          Probability
+     1.    rice          85.2%
+     2.    maize         8.3%
+     3.    cotton        3.1%
+     ...
+     15.   papaya        0.1%
+     ```
+
+3. **Batch Predictions** (`predict_batch`)
+   - Input: CSV file with multiple samples
+   - Returns: DataFrame with predictions for all samples
+   - Use case: Process multiple predictions at once
 
 ## Model Details
 
@@ -185,10 +237,65 @@ flask >= 3.0.0 (for web API)
 - min_samples_leaf: 2
 - random_state: 42
 
-**Feature Importance (Top 3):**
-1. Humidity: 26.5%
-2. Potassium (K): 22.1%
-3. Phosphorus (P): 17.4%
+**Feature Importance:**
+1. Humidity: ~40%
+2. Temperature: ~35%
+3. pH: ~25%
+
+
+## Understanding Model Accuracy vs Prediction Confidence
+
+### Model Accuracy (76%)
+- **Measures**: How often the model predicts correctly across all test samples
+- **Calculation**: `(Correct predictions / Total predictions) × 100`
+- **Means**: Out of 100 predictions, about 76 will have the correct crop as the top recommendation
+
+### Prediction Confidence/Probability
+- **Measures**: How confident the model is about a specific prediction
+- **Range**: 0% to 100% for each crop
+- **Example**: "Kidneybeans - 58.38%" means 58.38% confidence for this specific input
+
+
+### How to Access the Web App
+
+**✅ CORRECT Way:**
+1. Start Flask server: `python app.py`
+2. Open browser to: **http://127.0.0.1:5000/** (port 5000)
+3. Fill in the form and get instant recommendations
+
+**❌ COMMON MISTAKE:**
+- **Do NOT use** Live Server (port 5500) or open HTML file directly
+- **Do NOT access** `127.0.0.1:5500/templates/index.html`
+- The JSON API endpoint (`/api/predict`) only exists on the Flask server (port 5000)
+
+### Troubleshooting
+
+#### Error: "405 Method Not Allowed"
+**Cause**: You're accessing the wrong port (likely 5500 instead of 5000)
+**Solution**: 
+1. Check your browser URL - should be `http://127.0.0.1:5000/`
+2. Close any Live Server instances in VS Code
+3. Access only through Flask server on port 5000
+
+#### Error: "Failed to fetch" or "Connection refused"
+**Cause**: Flask server is not running
+**Solution**:
+1. Run `python app.py` in terminal
+2. Wait for message: "Running on http://127.0.0.1:5000"
+3. Then access in browser
+
+#### Error: "CORS policy blocked"
+**Cause**: Missing or incorrect CORS configuration
+**Solution**: 
+1. Verify `flask-cors` is installed: `pip install flask-cors`
+2. Check `app.py` imports: `from flask_cors import CORS`
+3. Restart Flask server
+
+#### Browser shows old version after updating code
+**Solution**:
+1. Hard refresh: Press **Ctrl + Shift + R** (or Ctrl + F5)
+2. Or clear browser cache
+3. Or use incognito/private mode
 
 ## Supported Crops
 
@@ -196,7 +303,15 @@ apple, banana, blackgram, chickpea, coconut, coffee, cotton, grapes, jute, kidne
 
 ## Evaluation Results
 
-- **Overall Accuracy**: 97.05%
-- **Perfect Predictions (100%)**: 16 out of 22 crops
-- **Lowest Accuracy**: Lentil at 75% (some confusion with blackgram and pigeonpeas)
+
+### Why 76% Accuracy?
+
+The model originally used 6 features (N, P, K, temperature, humidity, pH) achieving 97% accuracy. After removing the 3 soil nutrient features:
+
+
+### For Development
+```bash
+python app.py  # Runs on http://127.0.0.1:5000 with debug mode
+```
+
 

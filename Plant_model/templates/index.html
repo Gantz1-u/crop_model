@@ -2,36 +2,198 @@
 <html>
 <head>
     <title>Crop Recommendation</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        input {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #loading {
+            display: none;
+            color: #666;
+            margin-top: 20px;
+        }
+        #results {
+            margin-top: 30px;
+            display: none;
+        }
+        .recommendation {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .recommendation:nth-child(1) {
+            background-color: #d4edda;
+            font-weight: bold;
+        }
+        .crop-name {
+            text-transform: capitalize;
+        }
+        .probability {
+            color: #666;
+        }
+        .error {
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Crop Recommendation System</h1>
+    <h1>🌱 Crop Recommendation System</h1>
+    <p>Enter climate and soil parameters to get top 15 crop recommendations</p>
     
-    <form method="POST" action="/predict">
-        <label>Potassium (K):</label>
-        <input type="number" name="K" step="any" required>
-        <br><br>
+    <form id="predictionForm">
+        <div class="input-group">
+            <label>Temperature (°C):</label>
+            <input type="number" id="temperature" step="any" required>
+        </div>
         
-        <label>Phosphorus (P):</label>
-        <input type="number" name="P" step="any" required>
-        <br><br>
+        <div class="input-group">
+            <label>Humidity (%):</label>
+            <input type="number" id="humidity" step="any" required>
+        </div>
         
-        <label>Nitrogen (N):</label>
-        <input type="number" name="N" step="any" required>
-        <br><br>
+        <div class="input-group">
+            <label>pH Level:</label>
+            <input type="number" id="ph" step="any" required>
+        </div>
         
-        <label>Temperature:</label>
-        <input type="number" name="temperature" step="any" required>
-        <br><br>
-        
-        <label>Humidity:</label>
-        <input type="number" name="humidity" step="any" required>
-        <br><br>
-        
-        <label>pH:</label>
-        <input type="number" name="ph" step="any" required>
-        <br><br>
-        
-        <button type="submit">Predict Crop</button>
+        <button type="submit">Get Recommendations</button>
     </form>
+    
+    <div id="loading">🔄 Loading recommendations...</div>
+    <div id="error" class="error"></div>
+    
+    <div id="results">
+        <h2>📊 Top 15 Crop Recommendations</h2>
+        <p><strong>Input Parameters:</strong></p>
+        <p id="inputParams"></p>
+        <div id="recommendations"></div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get form values
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const humidity = parseFloat(document.getElementById('humidity').value);
+            const ph = parseFloat(document.getElementById('ph').value);
+            
+            console.log('Form submitted:', {temperature, humidity, ph});
+            
+            // Validate pH range (0-14)
+            if (ph < 0 || ph > 14) {
+                document.getElementById('error').textContent = 'pH must be between 0 and 14';
+                return;
+            }
+            
+            // Show loading, hide results and errors
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').textContent = '';
+            
+            console.log('Calling API at /api/predict...');
+            
+            try {
+                // Call API
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        temperature: temperature,
+                        humidity: humidity,
+                        ph: ph,
+                        top_n: 15
+                    })
+                });
+                
+                console.log('Response received:', response.status, response.statusText);
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Check if response is OK
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new Error("Server returned non-JSON response. Make sure Flask server is running.");
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display input parameters
+                    document.getElementById('inputParams').textContent = 
+                        `Temperature: ${temperature}°C, Humidity: ${humidity}%, pH: ${ph}`;
+                    
+                    // Display recommendations
+                    const recommendationsDiv = document.getElementById('recommendations');
+                    recommendationsDiv.innerHTML = '';
+                    
+                    data.recommendations.forEach((rec, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'recommendation';
+                        div.innerHTML = `
+                            <span class="crop-name">${index + 1}. ${rec.crop}</span>
+                            <span class="probability">${(rec.probability * 100).toFixed(2)}%</span>
+                        `;
+                        recommendationsDiv.appendChild(div);
+                    });
+                    
+                    // Show results
+                    document.getElementById('results').style.display = 'block';
+                    console.log('Results displayed successfully');
+                } else {
+                    console.error('API returned error:', data.error);
+                    document.getElementById('error').textContent = 'Error: ' + data.error;
+                }
+            } catch (error) {
+                console.error('Exception caught:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').textContent = 'Error connecting to server: ' + error.message;
+            }
+        });
+    </script>
 </body>
 </html>
